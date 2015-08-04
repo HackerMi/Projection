@@ -16,24 +16,28 @@
 
 package com.android.accessorydisplay.sink;
 
-import com.android.accessorydisplay.common.Protocol;
-import com.android.accessorydisplay.common.Service;
-import com.android.accessorydisplay.common.Transport;
-
 import android.content.Context;
 import android.graphics.Rect;
+import android.media.AudioFormat;
+import android.media.AudioManager;
+import android.media.AudioTrack;
 import android.media.MediaCodec;
 import android.media.MediaCodec.BufferInfo;
 import android.media.MediaFormat;
 import android.os.Handler;
+import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
-import java.io.IOException;
+import com.android.accessorydisplay.common.Protocol;
+import com.android.accessorydisplay.common.Service;
+import com.android.accessorydisplay.common.Transport;
+
 import java.nio.ByteBuffer;
 
 public class DisplaySinkService extends Service implements SurfaceHolder.Callback {
+    private String TAG = "@@@@";
     private final ByteBuffer mBuffer = ByteBuffer.allocate(12);
     private final Handler mTransportHandler;
     private final int mDensityDpi;
@@ -51,11 +55,13 @@ public class DisplaySinkService extends Service implements SurfaceHolder.Callbac
     private MediaCodec mCodec;
     private ByteBuffer[] mCodecInputBuffers;
     private BufferInfo mCodecBufferInfo;
+    private AudioTrack mAudioTrack;
 
     public DisplaySinkService(Context context, Transport transport, int densityDpi) {
         super(context, transport, Protocol.DisplaySinkService.ID);
         mTransportHandler = transport.getHandler();
         mDensityDpi = densityDpi;
+        initAudioTrack();
     }
 
     public void setSurfaceView(final SurfaceView surfaceView) {
@@ -97,7 +103,12 @@ public class DisplaySinkService extends Service implements SurfaceHolder.Callbac
             }
 
             case Protocol.DisplaySinkService.MSG_CONTENT: {
-                decode(content);
+//                decode(content);
+                break;
+            }
+            
+            case Protocol.DisplaySinkService.MSG_AUDIO: {
+                playAudio(content);
                 break;
             }
         }
@@ -184,6 +195,59 @@ public class DisplaySinkService extends Service implements SurfaceHolder.Callbac
                 consumeCodecOutputLocked();
             }
         }
+    }
+
+    @Override
+    public void stop() {
+        super.stop();
+        releaseAudioTrack();
+    }
+
+    private void releaseAudioTrack() {
+        if (mAudioTrack != null) {
+            mAudioTrack.stop();
+            mAudioTrack.release();
+            mAudioTrack = null;
+        }
+
+    }
+
+    private void playAudio(ByteBuffer content) {
+        if (content == null) {
+            return;
+        }
+
+        if (mAudioTrack == null) {
+            return;
+        }
+
+        Log.e(TAG, "playAudio, track state: " + mAudioTrack.getState());
+        int size = content.limit() - content.position();
+        byte[] data = new byte[size];
+        content.get(data, 0, size);
+        Log.e(TAG, "content limit: " + content.limit() + ", length: " + data.length + ", size: "
+                + size);
+        mAudioTrack.write(data, 0, size);
+        Log.e(TAG, "playAudio end");
+    }
+
+    private void initAudioTrack() {
+        int frequency = 44100;
+        int channel = AudioFormat.CHANNEL_CONFIGURATION_STEREO;
+        int sampBit = AudioFormat.ENCODING_PCM_16BIT;
+        int minBufSize = AudioTrack.getMinBufferSize(frequency,
+                channel,
+                sampBit);
+        // mPrimePlaySize = minBufSize * 2;
+
+        mAudioTrack = new AudioTrack(AudioManager.STREAM_MUSIC,
+                frequency,
+                channel,
+                sampBit,
+                minBufSize * 2,
+                AudioTrack.MODE_STREAM);
+        mAudioTrack.play();
+        Log.e(TAG, "initAudioTrack end");
     }
 
     private boolean provideCodecInputLocked(ByteBuffer content) {

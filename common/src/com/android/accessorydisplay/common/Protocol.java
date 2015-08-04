@@ -46,6 +46,9 @@ public class Protocol {
 
         // Send MPEG2-TS H.264 encoded content.
         public static final int MSG_CONTENT = 2;
+        
+        // Send pcm content.
+        public static final int MSG_AUDIO = 3;
     }
 
     public static final class DisplaySourceService {

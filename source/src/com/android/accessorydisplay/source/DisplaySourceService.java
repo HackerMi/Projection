@@ -16,23 +16,25 @@
 
 package com.android.accessorydisplay.source;
 
-import com.android.accessorydisplay.common.Protocol;
-import com.android.accessorydisplay.common.Service;
-import com.android.accessorydisplay.common.Transport;
-
 import android.content.Context;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
+import android.media.AudioFormat;
+import android.media.AudioRecord;
 import android.media.MediaCodec;
 import android.media.MediaCodec.BufferInfo;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
+import android.media.MediaRecorder;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 import android.view.Display;
 import android.view.Surface;
 
-import java.io.IOException;
+import com.android.accessorydisplay.common.Protocol;
+import com.android.accessorydisplay.common.Service;
+import com.android.accessorydisplay.common.Transport;
 import java.nio.ByteBuffer;
 
 public class DisplaySourceService extends Service {
@@ -54,7 +56,9 @@ public class DisplaySourceService extends Service {
     private int mSinkDensityDpi;
 
     private VirtualDisplayThread mVirtualDisplayThread;
-
+    private AudioRecordThread mAudioRecordThread;
+    private static String TAG = "DisplaySourceService";
+    
     public DisplaySourceService(Context context, Transport transport, Callbacks callbacks) {
         super(context, transport, Protocol.DisplaySourceService.ID);
         mCallbacks = callbacks;
@@ -74,7 +78,6 @@ public class DisplaySourceService extends Service {
     @Override
     public void stop() {
         super.stop();
-
         handleSinkNotAvailable();
     }
 
@@ -120,6 +123,7 @@ public class DisplaySourceService extends Service {
         mSinkHeight = height;
         mSinkDensityDpi = densityDpi;
         createVirtualDisplay();
+        createAudioRecord();
     }
 
     private void handleSinkNotAvailable() {
@@ -130,6 +134,7 @@ public class DisplaySourceService extends Service {
         mSinkHeight = 0;
         mSinkDensityDpi = 0;
         releaseVirtualDisplay();
+        releaseAudioRecord();
     }
 
     private void createVirtualDisplay() {
@@ -147,6 +152,19 @@ public class DisplaySourceService extends Service {
         }
     }
 
+    private void createAudioRecord() {
+        releaseAudioRecord();
+
+        mAudioRecordThread = new AudioRecordThread();
+        mAudioRecordThread.start();
+    }
+
+    private void releaseAudioRecord() {
+        if (mAudioRecordThread != null) {
+            mAudioRecordThread.quit();
+            mAudioRecordThread = null;
+        }
+    }
     public interface Callbacks {
         public void onDisplayAdded(Display display);
         public void onDisplayRemoved(Display display);
@@ -242,6 +260,47 @@ public class DisplaySourceService extends Service {
                     getLogger().log("Codec dequeue buffer timed out.");
                 }
             }
+        }
+    }
+
+    private final class AudioRecordThread extends Thread {
+        private final int kSampleRate = 48000;
+        private final int kChannelMode = AudioFormat.CHANNEL_IN_STEREO;
+        private final int kEncodeFormat = AudioFormat.ENCODING_PCM_16BIT;
+        private int kFrameSize = 2048;
+        private String filePath = "/sdcard/voice.pcm";
+        private boolean isRecording = false;
+
+        @Override
+        public void run() {
+            // 根据/system/etc/audio_policy.conf配置AudioRecord
+            int minBufferSize = AudioRecord.getMinBufferSize(kSampleRate, kChannelMode,
+                    kEncodeFormat);
+            AudioRecord recorder = new AudioRecord(MediaRecorder.AudioSource.REMOTE_SUBMIX,
+                    kSampleRate, kChannelMode, kEncodeFormat, minBufferSize * 2);
+            kFrameSize = minBufferSize * 2;
+            isRecording = true;
+
+            recorder.startRecording();
+            byte[] buffer = new byte[kFrameSize];
+            int num = 0;
+            while (isRecording) {
+                num = recorder.read(buffer, 0, kFrameSize);
+                Log.d(TAG, "buffer = " + buffer.toString() + ", num = " + num);
+                ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
+                byteBuffer.position(0);
+                byteBuffer.limit(num);
+                getTransport().sendMessage(Protocol.DisplaySinkService.ID,
+                        Protocol.DisplaySinkService.MSG_AUDIO, byteBuffer);
+            }
+            recorder.stop();
+            recorder.release();
+            recorder = null;
+            Log.d(TAG, "clean up");
+        }
+
+        public void quit() {
+            isRecording = false;
         }
     }
 }
