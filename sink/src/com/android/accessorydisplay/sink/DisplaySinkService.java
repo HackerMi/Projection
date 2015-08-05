@@ -221,18 +221,16 @@ public class DisplaySinkService extends Service implements SurfaceHolder.Callbac
             return;
         }
 
-        Log.e(TAG, "playAudio, track state: " + mAudioTrack.getState());
+//        Log.e(TAG, "playAudio, track state: " + mAudioTrack.getState());
         int size = content.limit() - content.position();
         byte[] data = new byte[size];
         content.get(data, 0, size);
-        Log.e(TAG, "content limit: " + content.limit() + ", length: " + data.length + ", size: "
-                + size);
+        Log.e(TAG, "content limit: " + content.limit() + ", length: " + data.length + ", size: " + size);
         mAudioTrack.write(data, 0, size);
-        Log.e(TAG, "playAudio end");
     }
 
     private void initAudioTrack() {
-        int frequency = 44100;
+        int frequency = 48000;
         int channel = AudioFormat.CHANNEL_CONFIGURATION_STEREO;
         int sampBit = AudioFormat.ENCODING_PCM_16BIT;
         int minBufSize = AudioTrack.getMinBufferSize(frequency,
