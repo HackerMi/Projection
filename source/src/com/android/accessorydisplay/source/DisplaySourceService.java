@@ -264,7 +264,7 @@ public class DisplaySourceService extends Service {
     }
 
     private final class AudioRecordThread extends Thread {
-        private final int kSampleRate = 48000;
+        private final int kSampleRate = 48000; //Source和Sink所有参数都必须一样，播放才能正常。之前因为Sink端采样率设为441000导致一直有爆音。
         private final int kChannelMode = AudioFormat.CHANNEL_IN_STEREO;
         private final int kEncodeFormat = AudioFormat.ENCODING_PCM_16BIT;
         private int kFrameSize = 2048;
@@ -278,7 +278,7 @@ public class DisplaySourceService extends Service {
                     kEncodeFormat);
             AudioRecord recorder = new AudioRecord(MediaRecorder.AudioSource.REMOTE_SUBMIX,
                     kSampleRate, kChannelMode, kEncodeFormat, minBufferSize * 2);
-            kFrameSize = minBufferSize * 2;
+            kFrameSize = minBufferSize; //这里测试128字节也是OK的，每次传送的Buffer大小和音乐播放音质效果没关系
             isRecording = true;
 
             recorder.startRecording();
@@ -286,7 +286,7 @@ public class DisplaySourceService extends Service {
             int num = 0;
             while (isRecording) {
                 num = recorder.read(buffer, 0, kFrameSize);
-                Log.d(TAG, "buffer = " + buffer.toString() + ", num = " + num);
+                Log.d(TAG, "buffer num = " + num);
                 ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
                 byteBuffer.position(0);
                 byteBuffer.limit(num);
