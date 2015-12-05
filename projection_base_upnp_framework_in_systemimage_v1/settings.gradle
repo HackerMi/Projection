@@ -1,0 +1,1 @@
+include ':UpnpCommon', ':UpnpOnLan', ':UpnpOnBle', ':UpnpstackService', ':UpnpstackDemo', ':dmr', ':avplayer', ':avplayercp', 'UpnpstackServiceDemo', ':binarylight', ':projection'
