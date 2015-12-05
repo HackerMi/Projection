@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Projection</string>
+
+    <string name="hello_world">Hello world!</string>
+    <string name="action_discovery">Discovery</string>
+    <string name="title_activity_discovery">DiscoveryActivity</string>
+    <string name="title_activity_control">ControlActivity</string>
+    <string name="SwitchOn">打开</string>
+    <string name="SwitchOff">关闭</string>
+</resources>
