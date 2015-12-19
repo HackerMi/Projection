@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">UpnpApplicationDemos</string>
+
+    <string name="screen_sharing_toggle">Toggle screen sharing</string>
+</resources>

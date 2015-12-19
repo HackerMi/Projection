@@ -1,0 +1,45 @@
+<manifest package="com.example.xiaomi.upnp.apis"
+          xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application
+        android:name="UpnpApplication"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+
+        <activity android:name="ApiDemos">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity android:name=".media.projection.local.MediaProjectionDemo"
+                  android:label="Media/Projection/Local">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="xiaomi.intent.category.upnp.SAMPLE_CODE" />
+            </intent-filter>
+        </activity>
+
+        <activity android:name=".media.projection.sink.ProjectionSinkDemo"
+                  android:label="Media/Projection/Sink">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="xiaomi.intent.category.upnp.SAMPLE_CODE" />
+            </intent-filter>
+        </activity>
+
+        <activity android:name=".media.projection.source.ProjectionSourceActivity"
+                  android:label="Media/Projection/Source">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="xiaomi.intent.category.upnp.SAMPLE_CODE" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>
