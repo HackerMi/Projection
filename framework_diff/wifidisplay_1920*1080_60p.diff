@@ -1,0 +1,77 @@
+From b018a2d7af027bdd978ae672a374e07aa582b364 Mon Sep 17 00:00:00 2001
+From: wangwei_b <wangwei_b@xiaomi.com>
+Date: Wed, 27 Jan 2016 15:25:30 +0800
+Subject: [PATCH] Enable Wifi Display to support 1920*1080 60fps
+
+Issue 199684
+
+enable 1920*1080 60fps format and support negotiated frame rate.
+
+Change-Id: Iaaab18ecd8287b814513cac484df032c0b4471a8
+Signed-off-by: wangwei_b <wangwei_b@xiaomi.com>
+---
+
+diff --git a/media/libstagefright/wifi-display/source/Converter.cpp b/media/libstagefright/wifi-display/source/Converter.cpp
+index 471152e..6db4092 100644
+--- a/media/libstagefright/wifi-display/source/Converter.cpp
++++ b/media/libstagefright/wifi-display/source/Converter.cpp
+@@ -159,7 +159,7 @@
+     }
+ 
+     int32_t audioBitrate = GetInt32Property("media.wfd.audio-bitrate", 128000);
+-    int32_t videoBitrate = GetInt32Property("media.wfd.video-bitrate", 5000000);
++    int32_t videoBitrate = GetInt32Property("media.wfd.video-bitrate", 6000000); //change to 6M bit rate as default
+     mPrevVideoBitrate = videoBitrate;
+ 
+     ALOGI("using audio bitrate of %d bps, video bitrate of %d bps",
+@@ -168,9 +168,15 @@
+     if (isAudio) {
+         mOutputFormat->setInt32("bitrate", audioBitrate);
+     } else {
++        int32_t frameRate;
++        if (!mOutputFormat->findInt32("frame-rate", &frameRate)) {
++            frameRate = 30;
++        }
++        ALOGI("using video frame rate %d", frameRate);
++
+         mOutputFormat->setInt32("bitrate", videoBitrate);
+         mOutputFormat->setInt32("bitrate-mode", OMX_Video_ControlRateConstant);
+-        mOutputFormat->setInt32("frame-rate", 30);
++        mOutputFormat->setInt32("frame-rate", frameRate);
+         mOutputFormat->setInt32("i-frame-interval", 15);  // Iframes every 15 secs
+ 
+         // Configure encoder to use intra macroblock refresh mode
+diff --git a/media/libstagefright/wifi-display/source/PlaybackSession.cpp b/media/libstagefright/wifi-display/source/PlaybackSession.cpp
+index ed5a404..535fb24 100644
+--- a/media/libstagefright/wifi-display/source/PlaybackSession.cpp
++++ b/media/libstagefright/wifi-display/source/PlaybackSession.cpp
+@@ -956,6 +956,10 @@
+         format->setInt32("profile-idc", profileIdc);
+         format->setInt32("level-idc", levelIdc);
+         format->setInt32("constraint-set", constraintSet);
++
++        sp<RepeaterSource> repeater = static_cast<RepeaterSource *>(source.get());
++        double frameRate = repeater->getFrameRate();
++        format->setInt32("frame-rate", (int32_t)frameRate);
+     } else {
+         format->setString(
+                 "mime",
+diff --git a/media/libstagefright/wifi-display/source/WifiDisplaySource.cpp b/media/libstagefright/wifi-display/source/WifiDisplaySource.cpp
+index e26165e..4a8690d 100644
+--- a/media/libstagefright/wifi-display/source/WifiDisplaySource.cpp
++++ b/media/libstagefright/wifi-display/source/WifiDisplaySource.cpp
+@@ -78,11 +78,11 @@
+     mSupportedSourceVideoFormats.disableAll();
+ 
+     mSupportedSourceVideoFormats.setNativeResolution(
+-            VideoFormats::RESOLUTION_CEA, 5);  // 1280x720 p30
++            VideoFormats::RESOLUTION_CEA, 8);  // 1920x1080 p60
+ 
+-    // Enable all resolutions up to 1280x720p30
++    // Enable all resolutions up to 1920x1080 p60
+     mSupportedSourceVideoFormats.enableResolutionUpto(
+-            VideoFormats::RESOLUTION_CEA, 5,
++            VideoFormats::RESOLUTION_CEA, 8,
+             VideoFormats::PROFILE_CHP,  // Constrained High Profile
+             VideoFormats::LEVEL_32);    // Level 3.2
+ }
