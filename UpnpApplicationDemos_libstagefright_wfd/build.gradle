@@ -1,0 +1,56 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 23
+    buildToolsVersion "23.0.2"
+
+    defaultConfig {
+        applicationId "com.example.xiaomi.upnp.apis"
+        minSdkVersion 21
+        targetSdkVersion 23
+        versionCode 1
+        versionName "1.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    sourceSets {
+        main {
+            java.srcDirs = ['src/main/java/']
+            aidl.srcDirs = ['src/main/aidl']
+            res.srcDirs = ['src/main/res']
+            assets.srcDirs = ['src/main/assets']
+        }
+        Lollipop {
+            java.srcDirs = ['src/main/v21/']
+        }
+        Marshmallow {
+            java.srcDirs = ['src/main/v23/']
+        }
+    }
+
+    productFlavors {
+        Lollipop {
+            minSdkVersion 21
+            maxSdkVersion 22
+            targetSdkVersion 21
+        }
+        Marshmallow {
+            minSdkVersion 23
+            targetSdkVersion 23
+        }
+    }
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    testCompile 'junit:junit:4.12'
+    compile 'com.android.support:appcompat-v7:23.1.1'
+    compile project(':UpnpSession')
+    compile project(':UpnpServiceApi')
+}
